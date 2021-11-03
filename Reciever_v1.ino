@@ -76,7 +76,7 @@ void loop() {
     Serial.print(F(": "));
     Serial.println(payload);                // print the payload's value
     digitalWrite(2,payload);
-    digitalWrite(4,payload);
+    digitalWrite(4,payload);  
   }
 
 

@@ -10,6 +10,10 @@ float AccErrorX, AccErrorY, GyroErrorX, GyroErrorY, GyroErrorZ;
 float elapsedTime, currentTime, previousTime;
 int c = 0;
 
+bool failure;
+unsigned long detectTime;
+unsigned long timeOn;
+
 #include <SPI.h>
 #include "printf.h"
 #include "RF24.h"
@@ -71,33 +75,65 @@ void setup() {
   // radio.printDetails();       // (smaller) function that prints raw register values
   // radio.printPrettyDetails(); // (larger) function that prints human readable data
   setupIMU();
+
+  timeOn=2000; 
+  detectTime=millis()-timeOn;
 } // setup
 
 void loop() {
-
   // This device is a TX node
+  double IMUsense=getIMU();
   float switchIn = digitalRead(3);
+  float payload;
+  bool IMUdetect;
+  unsigned long currTime=millis();
+  if(currTime-detectTime<timeOn||IMUsense>4.0){
+    IMUdetect=true;
+    if(IMUsense>4.0){
+      detectTime=currTime;
+    }
+  } else {
+    IMUdetect=false;
+  }
+  if(switchIn==1.0||IMUdetect)
+  {
+    payload=1.0;
+  } else {
+    payload=0.0;
+  }
   unsigned long start_timer = micros();                    // start the timer
-  bool report = radio.write(&switchIn, sizeof(float));      // transmit & save the report
+  bool report = radio.write(&payload, sizeof(float));      // transmit & save the report
   unsigned long end_timer = micros();                      // end the timer
 
+
   if (report) {
+    /*
     Serial.print(F("Transmission successful! "));          // payload was delivered
     Serial.print(F("Time to transmit = "));
     Serial.print(end_timer - start_timer);                 // print the timer result
     Serial.print(F(" us. Sent: "));
     Serial.println(switchIn);                               // print payload sent
+    */
+    failure=false;
 
   } else {
-    Serial.println(F("Transmission failed or timed out")); // payload was not delivered
+    //Serial.println(F("Transmission failed or timed out")); // payload was not delivered
+    failure=true;
   }
 
 
-  Serial.print("Switch is: ");
-  Serial.println(switchIn);
-  digitalWrite(2, switchIn);
+  //Serial.print("Switch is: ");
+  //Serial.println(switchIn);
+  if(!failure){
+    digitalWrite(2, payload);
+  } else {
+    digitalWrite(2, HIGH);
+    delay(500);
+    digitalWrite(2,LOW);
+    delay(1000);
+  }
   // to make this example readable in the serial monitor
-  delay(100);  // slow transmissions down by 1 second
+  delay(100);  // slow transmissions down by 0.1 second
 
 } // loop
 
@@ -182,7 +218,7 @@ void setupIMU() {
   delay(20);
 }
 
-void loopIMU() {
+double getIMU() {
 // === Read acceleromter data === //
   Wire.beginTransmission(MPU);
   Wire.write(0x3B); // Start with register 0x3B (ACCEL_XOUT_H)
@@ -195,11 +231,5 @@ void loopIMU() {
   Az = (Wire.read() << 8 | Wire.read()) / divider; // Z-axis value
 
   MagA=sqrt(Ax*Ax+Ay*Ay+Az*Az);
-
-  if(MagA>4.0){
-    digitalWrite(2,HIGH);
-    delay(1000);
-  }else{
-    digitalWrite(2,LOW);
-  }
+  return MagA;
 }
