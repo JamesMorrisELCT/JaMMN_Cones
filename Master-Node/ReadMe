@@ -1,1 +1,5 @@
 (2/8/22) This folder will contain a new attempt at creating a network of NRF24LO1 modules using the RF24Network arduino library
+
+A good source:
+
+https://howtomechatronics.com/tutorials/arduino/how-to-build-an-arduino-wireless-network-with-multiple-nrf24l01-modules/
