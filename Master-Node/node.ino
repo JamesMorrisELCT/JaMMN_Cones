@@ -18,12 +18,13 @@ RF24Network network(radio);
 const uint16_t master = 00;   // Address of this node in Octal format ( 04,031, etc)
 const uint16_t node01 = 01;      // Address of the other node in Octal format
 const uint16_t node02 = 02;
+const uint16_t node03 = 03;
 
 void setup() {
   Serial.begin(115200);
   SPI.begin();
   radio.begin();
-  network.begin(90, node01);  //(channel, node address) CHANGE NODE ADDRESS FOR EACH DIFFERENT NODE
+  network.begin(90, node03);  //(channel, node address) CHANGE NODE ADDRESS FOR EACH DIFFERENT NODE
   radio.setDataRate(RF24_2MBPS);
   pinMode(2, OUTPUT);//LED
   pinMode(3, INPUT); //SWITCH
