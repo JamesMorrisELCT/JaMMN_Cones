@@ -2,7 +2,7 @@
  This will act as the boombox controller. It will balance transmitting out to the nodes and receiving their data, instead of only doing 1 function
 */
 
-
+// Nathan was here
 #include <Wire.h>
 #include <SPI.h>
 #include "printf.h"
