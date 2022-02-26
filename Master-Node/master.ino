@@ -31,19 +31,37 @@ void setup() {
 
 void loop() {
   network.update();
+  //################## Receive #####################
+  RF24NetworkHeader headertemp;
+  network.peek(&headertemp);
+  Serial.println((int)headertemp.from_node);
   while ( network.available() ) {     // Is there any incoming data?
+    Serial.println("RX");
     RF24NetworkHeader header;
-    unsigned long payload;
-    network.read(header, &payload, sizeof(payload)); // Read the incoming data
-    //Serial.println(payload);
-    if(header.from_node == 01 ){
-      digitalWrite(2,payload);
+    int incomingData;
+    network.read(header, &incomingData, sizeof(incomingData)); // Read the incoming data
+    
+    if(header.from_node == 01 ){ //TAKE ACTION ON RECIEVE PAYLOAD
+      digitalWrite(2,incomingData);
     }
     if(header.from_node == 02){
-      digitalWrite(4,payload);
+      digitalWrite(4,incomingData);
     }
     if(header.from_node == 03){
-      digitalWrite(5,payload);
+      digitalWrite(5,incomingData);
     }
-  }
+  } 
+
+  //############## TRANSMIT ################33
+  int switchIn = digitalRead(3);
+  //digitalWrite(5,switchIn);
+  sendData(switchIn, node01);  
+  delay(100);
+  sendData(switchIn, node02);
+  delay(50);
+}
+
+void sendData(int outGoingData, uint16_t dest) {
+  RF24NetworkHeader header1(dest); //destination
+  bool ok = network.write(header1, &outGoingData, sizeof(outGoingData)); //1 means SUCCESS, 0 means PACKET FAILED
 }

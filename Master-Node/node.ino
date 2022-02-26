@@ -24,17 +24,36 @@ void setup() {
   Serial.begin(115200);
   SPI.begin();
   radio.begin();
-  network.begin(90, node03);  //(channel, node address) CHANGE NODE ADDRESS FOR EACH DIFFERENT NODE
+  network.begin(90, node02);  //(channel, node address) CHANGE NODE ADDRESS FOR EACH DIFFERENT NODE
   radio.setDataRate(RF24_2MBPS);
   pinMode(2, OUTPUT);//LED
   pinMode(3, INPUT); //SWITCH
 }
 
 void loop(){
+  network.update(); //NEED AT BEGINNING OF EVERY LOOP
+  //############### RECEIVE ######################
+  RF24NetworkHeader headertemp;
+  network.peek(&headertemp);
+  Serial.println(headertemp.from_node);
+  while(network.available()){
+    Serial.println("RX");
+    RF24NetworkHeader header;
+    int incomingData;
+    network.read(header, &incomingData, sizeof(incomingData));
+    if(header.from_node == 00){
+      digitalWrite(2,!incomingData); //CHANGE BASED ON DEMO
+    }
+  } 
+  
+  //############## TRANSMIT ######################
   int switchIn = digitalRead(3);
-  digitalWrite(2,switchIn);
-  network.update();
-  RF24NetworkHeader header1(master); //destination
-  bool ok = network.write(header1, &switchIn, sizeof(switchIn)); //1 means SUCCESS, 0 means PACKET FAILED
-  //Serial.println(ok);
+  //digitalWrite(2,switchIn);
+  sendData(switchIn, master); 
+  delay(100);
+}
+
+void sendData(int outGoingData, uint16_t dest) {
+  RF24NetworkHeader header1(dest); //destination
+  bool ok = network.write(header1, &outGoingData, sizeof(outGoingData)); //1 means SUCCESS, 0 means PACKET FAILED
 }
