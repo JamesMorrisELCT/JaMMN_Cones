@@ -23,6 +23,7 @@ void setup() {
   radio.begin();
   network.begin(90, master);  //(channel, node address)
   radio.setDataRate(RF24_2MBPS);
+  //radio.setPALevel(RF24_PA_LOW);  // RF24_PA_MAX is default.
   pinMode(2, OUTPUT);//LED 1
   pinMode(3,INPUT); //SWITCH
   pinMode(4, OUTPUT); //LED 2
@@ -43,6 +44,7 @@ void loop() {
     
     if(header.from_node == 01 ){ //TAKE ACTION ON RECIEVE PAYLOAD
       digitalWrite(2,incomingData);
+      sendData(02,node01);
     }
     if(header.from_node == 02){
       digitalWrite(4,incomingData);
@@ -55,13 +57,18 @@ void loop() {
   //############## TRANSMIT ################33
   int switchIn = digitalRead(3);
   //digitalWrite(5,switchIn);
-  sendData(switchIn, node01);  
+  //sendData(switchIn, node01);  
   delay(100);
   sendData(switchIn, node02);
   delay(50);
 }
 
 void sendData(int outGoingData, uint16_t dest) {
+  RF24NetworkHeader header1(dest); //destination
+  bool ok = network.write(header1, &outGoingData, sizeof(outGoingData)); //1 means SUCCESS, 0 means PACKET FAILED
+}
+
+void sendAddy(uint16_t outGoingData, uint16_t dest) {
   RF24NetworkHeader header1(dest); //destination
   bool ok = network.write(header1, &outGoingData, sizeof(outGoingData)); //1 means SUCCESS, 0 means PACKET FAILED
 }
