@@ -13,10 +13,14 @@
 RF24 radio(7, 8); // using pin 7 for the CE pin, and pin 8 for the CSN 
 RF24Network network(radio);
 const uint16_t master = 00;   // Address of this node in Octal format ( 04,031, etc)
-const uint16_t node01 = 01;      // Address of the other node in Octal format
+const uint16_t baseNode = 01;      // Address of the other node in Octal format
 const uint16_t node02 = 02;
 const uint16_t node03 = 03;
-
+int nodeCount = 02; //START WITH 02 AND INCREASE
+int totalNodes = 0;
+unsigned long prevTime = 0;
+unsigned long currTime;
+bool state = 1;
 void setup() {
   Serial.begin(115200);
   SPI.begin();
@@ -33,34 +37,44 @@ void setup() {
 void loop() {
   network.update();
   //################## Receive #####################
-  RF24NetworkHeader headertemp;
-  network.peek(&headertemp);
-  Serial.println((int)headertemp.from_node);
+  //RF24NetworkHeader headertemp;
+  //network.peek(&headertemp);
+  //Serial.println((int)headertemp.from_node);
   while ( network.available() ) {     // Is there any incoming data?
-    Serial.println("RX");
+    //Serial.println("RX");
     RF24NetworkHeader header;
     int incomingData;
     network.read(header, &incomingData, sizeof(incomingData)); // Read the incoming data
     
     if(header.from_node == 01 ){ //TAKE ACTION ON RECIEVE PAYLOAD
-      digitalWrite(2,incomingData);
-      sendData(02,node01);
+      Serial.println("changing");
+      sendData(nodeCount,baseNode);
+      nodeCount++; //increment for the next available node
+      totalNodes++;
     }
     if(header.from_node == 02){
-      digitalWrite(4,incomingData);
+      digitalWrite(2,incomingData);
     }
     if(header.from_node == 03){
-      digitalWrite(5,incomingData);
+      digitalWrite(4,incomingData);
     }
   } 
 
-  //############## TRANSMIT ################33
+  
+  // ############### Transmit on interval #########
+  currTime = millis();
+  if(currTime -prevTime >= 1000){
+    sendData((int)state,node02);
+    prevTime = currTime;
+    state = !state;
+  }
+
+  //############## TRANSMIT ################
+  /*
   int switchIn = digitalRead(3);
-  //digitalWrite(5,switchIn);
-  //sendData(switchIn, node01);  
-  delay(100);
   sendData(switchIn, node02);
-  delay(50);
+  sendData(switchIn, node03);
+  delay(50); */
 }
 
 void sendData(int outGoingData, uint16_t dest) {

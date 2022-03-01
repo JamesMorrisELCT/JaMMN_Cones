@@ -37,8 +37,8 @@ void loop(){
   // ############## INITIALIZE ###################
   
   //############### RECEIVE ######################
-  RF24NetworkHeader headertemp;
-  network.peek(&headertemp);
+ // RF24NetworkHeader headertemp;
+  //network.peek(&headertemp);
   //Serial.println(headertemp.from_node);
   while(network.available()){
     Serial.println(currNode);
@@ -52,7 +52,7 @@ void loop(){
         currNode = (uint16_t)incomingData;
       }
       else{
-       digitalWrite(2,!incomingData); //CHANGE BASED ON DEMO 
+       digitalWrite(2,incomingData); //CHANGE BASED ON DEMO 
       }
       /*if(incomingData - state == 1) {
         currNode = 01;
@@ -63,9 +63,15 @@ void loop(){
   } 
   
   //############## TRANSMIT ######################
-  int switchIn = digitalRead(3);
-  //digitalWrite(2,switchIn);
-  sendData(switchIn, master); 
+  if(currNode == 01)
+  {
+    sendData(1,master);
+  }
+  else
+  {
+    int switchIn = digitalRead(3);
+    sendData(switchIn, master); 
+  }
   delay(100);
 }
 
