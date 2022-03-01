@@ -18,6 +18,7 @@ const uint16_t node02 = 02;
 const uint16_t node03 = 03;
 int nodeCount = 02; //START WITH 02 AND INCREASE
 int totalNodes = 0;
+int i=0;
 unsigned long prevTime = 0;
 unsigned long currTime;
 bool state = 1;
@@ -58,14 +59,19 @@ void loop() {
     if(header.from_node == 03){
       digitalWrite(4,incomingData);
     }
+    if(header.from_node == 04){
+      digitalWrite(5,incomingData);
+    }
   } 
 
   
   // ############### Transmit on interval #########
   currTime = millis();
-  if(currTime -prevTime >= 1000){
-    sendData((int)state,node02);
+  if(currTime -prevTime >= 500){
+    sendData(1,(i%totalNodes)+2);
+    sendData(0,((i-1)%totalNodes)+2);
     prevTime = currTime;
+    i++;
     state = !state;
   }
 
