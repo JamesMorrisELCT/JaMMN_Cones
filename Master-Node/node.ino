@@ -54,11 +54,6 @@ void loop(){
       else{
        digitalWrite(2,incomingData); //CHANGE BASED ON DEMO 
       }
-      /*if(incomingData - state == 1) {
-        currNode = 01;
-        state = incomingData;
-        network.begin(90,currNode); 
-      } */
     }
   } 
   

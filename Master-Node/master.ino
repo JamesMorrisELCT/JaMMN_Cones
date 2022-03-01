@@ -21,7 +21,14 @@ int totalNodes = 0;
 int i=0;
 unsigned long prevTime = 0;
 unsigned long currTime;
-bool state = 1;
+unsigned long node02Time = 0;
+unsigned long node03Time = 0;
+unsigned long node04Time = 0;
+bool node02Flag = 0;
+bool node03Flag = 0;
+bool node04Flag = 0;
+
+
 void setup() {
   Serial.begin(115200);
   SPI.begin();
@@ -33,6 +40,7 @@ void setup() {
   pinMode(3,INPUT); //SWITCH
   pinMode(4, OUTPUT); //LED 2
   pinMode(5, OUTPUT); //LED 3
+  pinMode(6, OUTPUT); //LED ALARM RED
 }
 
 void loop() {
@@ -55,11 +63,15 @@ void loop() {
     }
     if(header.from_node == 02){
       digitalWrite(2,incomingData);
+      node02Flag = 1;
+      node02Time = millis();
     }
     if(header.from_node == 03){
+      node03Flag = 1;
       digitalWrite(4,incomingData);
     }
     if(header.from_node == 04){
+      node03Flag = 1;
       digitalWrite(5,incomingData);
     }
   } 
@@ -67,12 +79,19 @@ void loop() {
   
   // ############### Transmit on interval #########
   currTime = millis();
+  while(((currTime - node02Time == 1000)&& node02Flag)) //||(currTime - node03Time == 1000)||(currTime - node03Time == 1000))
+  {
+    //destruction?
+    digitalWrite(6,HIGH);
+    digitalWrite(5,LOW);
+    digitalWrite(4,LOW);
+    digitalWrite(3,LOW);
+  }
   if(currTime -prevTime >= 500){
     sendData(1,(i%totalNodes)+2);
     sendData(0,((i-1)%totalNodes)+2);
     prevTime = currTime;
     i++;
-    state = !state;
   }
 
   //############## TRANSMIT ################
@@ -84,11 +103,6 @@ void loop() {
 }
 
 void sendData(int outGoingData, uint16_t dest) {
-  RF24NetworkHeader header1(dest); //destination
-  bool ok = network.write(header1, &outGoingData, sizeof(outGoingData)); //1 means SUCCESS, 0 means PACKET FAILED
-}
-
-void sendAddy(uint16_t outGoingData, uint16_t dest) {
   RF24NetworkHeader header1(dest); //destination
   bool ok = network.write(header1, &outGoingData, sizeof(outGoingData)); //1 means SUCCESS, 0 means PACKET FAILED
 }
