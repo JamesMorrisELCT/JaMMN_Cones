@@ -69,17 +69,43 @@ void loop() {
     if(header.from_node == 03){
       node03Flag = 1;
       digitalWrite(4,incomingData);
+      node03Time = millis();
     }
     if(header.from_node == 04){
-      node03Flag = 1;
+      node04Flag = 1;
       digitalWrite(5,incomingData);
+      node04Time = millis();
     }
   } 
 
   
   // ############### Transmit on interval #########
   currTime = millis();
-  while(((currTime - node02Time == 1000)&& node02Flag)) //||(currTime - node03Time == 1000)||(currTime - node03Time == 1000))
+  /*while(((currTime - node02Time == 1000)&& node02Flag)||((currTime - node03Time == 1000)&& node03Flag)||((currTime - node04Time == 1000)&& node04Flag))
+  {
+    //destruction?
+    digitalWrite(6,HIGH);
+    digitalWrite(5,LOW);
+    digitalWrite(4,LOW);
+    digitalWrite(3,LOW);
+  } */
+  while((currTime - node02Time == 1000)&& node02Flag)
+  {
+    //destruction?
+    digitalWrite(6,HIGH);
+    digitalWrite(5,LOW);
+    digitalWrite(4,LOW);
+    digitalWrite(3,LOW);
+  }
+  while((currTime - node03Time == 1000)&& node03Flag)
+  {
+    //destruction?
+    digitalWrite(6,HIGH);
+    digitalWrite(5,LOW);
+    digitalWrite(4,LOW);
+    digitalWrite(3,LOW);
+  }
+  while((currTime - node04Time == 1000)&& node04Flag)
   {
     //destruction?
     digitalWrite(6,HIGH);
