@@ -1,12 +1,8 @@
 /*
  This will act as the boombox controller. It will balance transmitting out to the nodes and receiving their data, instead of only doing 1 function
 */
-<<<<<<< HEAD
-=======
-
 
 #define ENABLE false
->>>>>>> 53df5955602772ff65825ae51058dbd11cbd6bbe
 
 #include <Wire.h>
 #include <SPI.h>
