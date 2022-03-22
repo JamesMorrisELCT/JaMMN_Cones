@@ -1,7 +1,6 @@
 /*
  This will act as the boombox controller. It will balance transmitting out to the nodes and receiving their data, instead of only doing 1 function
 */
-//Boogity boogity boo
 
 #include <Wire.h>
 #include <SPI.h>
@@ -52,7 +51,8 @@ void loop() {
   while ( network.available() ) {     // Is there any incoming data?
     //Serial.println("RX");
     RF24NetworkHeader header;
-    int incomingData;
+    //int incomingData;
+    uint8_t incomingData;
     network.read(header, &incomingData, sizeof(incomingData)); // Read the incoming data
     
     if(header.from_node == 01 ){ //TAKE ACTION ON RECIEVE PAYLOAD
