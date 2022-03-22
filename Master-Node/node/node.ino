@@ -78,7 +78,7 @@ void loop(){
         currNode = (uint16_t)incomingData;
       }
       else{
-       digitalWrite(2,incomingData); //CHANGE BASED ON DEMO 
+       digitalWrite(LED,incomingData); //CHANGE BASED ON DEMO 
       }
     }
   } 
@@ -90,7 +90,11 @@ void loop(){
   }
   else
   {
-    uint8_t switchIn = digitalRead(3);
+    //uint8_t switchIn = digitalRead(SWITCH);
+    uint8_t switchIn=0;
+    if(state==2){
+      switchIn=1;
+    }
     sendData(switchIn, master); 
   }
   delay(100);
