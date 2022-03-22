@@ -1,7 +1,9 @@
 /*
  This will act as the boombox controller. It will balance transmitting out to the nodes and receiving their data, instead of only doing 1 function
 */
-//Boogity boogity boo
+
+
+#define ENABLE false
 
 #include <Wire.h>
 #include <SPI.h>
@@ -81,14 +83,9 @@ void loop() {
   
   // ############### Transmit on interval #########
   currTime = millis();
-  /*while(((currTime - node02Time == 1000)&& node02Flag)||((currTime - node03Time == 1000)&& node03Flag)||((currTime - node04Time == 1000)&& node04Flag))
-  {
-    //destruction?
-    digitalWrite(6,HIGH);
-    digitalWrite(5,LOW);
-    digitalWrite(4,LOW);
-    digitalWrite(3,LOW);
-  } */
+
+if(ENABLE)
+{
   while((currTime - node02Time == 1000)&& node02Flag)
   {
     //destruction?
@@ -113,6 +110,8 @@ void loop() {
     digitalWrite(4,LOW);
     digitalWrite(3,LOW);
   }
+}
+  
   if(currTime -prevTime >= 500){
     sendData(1,(i%totalNodes)+2);
     sendData(0,((i-1)%totalNodes)+2);
