@@ -90,7 +90,7 @@ void loop(){
   }
   else
   {
-    int switchIn = digitalRead(3);
+    uint8_t switchIn = digitalRead(3);
     sendData(switchIn, master); 
   }
   delay(100);
