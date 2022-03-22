@@ -36,7 +36,7 @@ void ADXL345_JaMNN::Init(byte range)
   
   /* Set the sensitivity of the module */
   Wire.write(DATA_FORMAT); 
-  Wire.write(range); 
+  Wire.write(range|B00100000); 
   Wire.endTransmission(); 
   
   /* Put the module into measurement mode to start taking measurements */

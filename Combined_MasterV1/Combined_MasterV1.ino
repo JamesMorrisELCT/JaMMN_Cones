@@ -33,10 +33,11 @@ void loop() {
   network.update();
   while ( network.available() ) {     // Is there any incoming data?
     RF24NetworkHeader header;
-    unsigned long payload;
+    //unsigned long payload;
+    uint8_t payload;
     network.read(header, &payload, sizeof(payload)); // Read the incoming data
     //Serial.println(payload);
-    if(header.from_node == 01 ){
+    if(header.from_node == 01 && payload==2){
       digitalWrite(2,payload);
     }
     if(header.from_node == 02){
