@@ -34,6 +34,7 @@
 
 
 #define I2C_Add 0x53
+//#define I2C_Add 0x1D
 
 #define RANGE_2g 0
 #define RANGE_4g 1
