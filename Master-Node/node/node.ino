@@ -15,21 +15,20 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-#define CE PD7
-#define CSN PB2
+#define CE 7 //PD7
+#define CSN 8 //PB2
 #define IRQ PC0
 
 #define intPin 2
 #define altInt PC2
 #define LED 3
-#define test_LED 7
 //#define SWITCH 9
 ADXL345_JaMNN adxl;
 
 uint8_t state;
 uint16_t count;
 bool intFlag;
-bool lightOn;
+int lightOn;
 
 // instantiate an object for the nRF24L01 transceiver
 RF24 radio(CE, CSN); // using pin 7 for the CE pin, and pin 8 for the CSN 
@@ -38,11 +37,12 @@ const uint16_t master = 00;   // Address of this node in Octal format ( 04,031, 
 const uint16_t node01 = 01;      // Address of the other node in Octal format
 const uint16_t node02 = 02;
 const uint16_t node03 = 03;
-uint16_t currNode = 01;
+uint16_t currNode = 02;
 
 void setup() {
   state=0;
   Serial.begin(9600);
+  Serial.println("Starting");
   SPI.begin();
   radio.begin();
   network.begin(90, currNode);  //(channel, node address) CHANGE NODE ADDRESS FOR EACH DIFFERENT NODE
@@ -54,7 +54,7 @@ void setup() {
   
 
 
-  adxl.Init(RANGE_16g);
+  //adxl.Init(RANGE_16g);
 
   digitalWrite(LED,1);
   count=0;
@@ -62,10 +62,11 @@ void setup() {
   intFlag=0;
   
   pinMode(intPin, INPUT);
-  adxl.Init_Active_Interrupts();
+  //adxl.Init_Active_Interrupts();
   //attachInterrupt(digitalPinToInterrupt(intPin),interruptFound, RISING);
   //setupExtInterrupt();
   sei();
+  Serial.println("Initialized");
 }
 
 void loop(){
@@ -73,31 +74,6 @@ void loop(){
 
   // ############## INITIALIZE ###################
   
-  //############### RECEIVE ######################
- // RF24NetworkHeader headertemp;
-  //network.peek(&headertemp);
-  //Serial.println(headertemp.from_node);
-  while(network.available()){
-    Serial.println(currNode);
-    Serial.println("RX");
-    RF24NetworkHeader header;
-    int incomingData;
-    network.read(header, &incomingData, sizeof(incomingData));
-    if(header.from_node == 00){
-      if(currNode == 01) { //SHOULD RUN ONCE, SHOULD CHANGE TO 02 BC OF MASTER
-        network.begin(90,(uint16_t) incomingData);
-        currNode = (uint16_t)incomingData;
-      }
-      else{
-       //digitalWrite(LED,incomingData); //CHANGE BASED ON DEMO
-       if(incomingData==1){
-        lightOn=1;
-       } else {
-        lightOn=0;
-       }
-      }
-    }
-  } 
   
   //############## TRANSMIT ######################
   if(currNode == 01)
@@ -111,8 +87,13 @@ void loop(){
     if(state==2){
       switchIn=1;
     }
-    sendData(switchIn, master); 
+    //sendData(switchIn, master);
+    Serial.print("Sending: ");
+    Serial.println(lightOn);
+    sendData(lightOn,master);
   }
+
+lightOn=(lightOn+1)%2;
 
   digitalWrite(LED,lightOn);
   delay(100);
@@ -121,6 +102,8 @@ void loop(){
 void sendData(int outGoingData, uint16_t dest) {
   RF24NetworkHeader header1(dest); //destination
   bool ok = network.write(header1, &outGoingData, sizeof(outGoingData)); //1 means SUCCESS, 0 means PACKET FAILED
+  Serial.print("OK?: ");
+  Serial.println(ok);
 }
 
 void interruptFound(){ //PLACEHOLDER FUNCTION FOR WHAT SHOULD BE DONE WHEN THE COLLLISION IS DETECTED
