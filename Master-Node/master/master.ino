@@ -117,7 +117,7 @@ if(ENABLE)
     sendData(0,((i-1)%totalNodes)+2);
     prevTime = currTime;
     i++;
-  }
+  } 
 
   //############## TRANSMIT ################
   /*

@@ -16,12 +16,20 @@
 #include <avr/interrupt.h>
 
 #define CE 7 //PD7
+<<<<<<< Updated upstream
 #define CSN 8 //PB2
+=======
+#define CSN 10 //PB2
+>>>>>>> Stashed changes
 #define IRQ PC0
 
 #define intPin 2
 #define altInt PC2
 #define LED 3
+<<<<<<< Updated upstream
+=======
+//#define test_LED 7
+>>>>>>> Stashed changes
 //#define SWITCH 9
 ADXL345_JaMNN adxl;
 
@@ -56,7 +64,7 @@ void setup() {
 
   //adxl.Init(RANGE_16g);
 
-  digitalWrite(LED,1);
+  //digitalWrite(LED,1);
   count=0;
   state=1; //Normally operating
   intFlag=0;
@@ -74,6 +82,44 @@ void loop(){
 
   // ############## INITIALIZE ###################
   
+<<<<<<< Updated upstream
+=======
+  //############### RECEIVE ######################
+ // RF24NetworkHeader headertemp;
+  //network.peek(&headertemp);
+  //Serial.println(headertemp.from_node);
+  while(network.available()){
+   // Serial.println(currNode);
+    //Serial.println("RX");
+    if(currNode == 01)
+    {
+      digitalWrite(LED,1);
+      delay(1000);
+    }
+      
+    else {
+      digitalWrite(LED,0);
+    }
+      
+    RF24NetworkHeader header;
+    int incomingData;
+    network.read(header, &incomingData, sizeof(incomingData));
+    if(header.from_node == 00){
+      if(currNode == 01) { //SHOULD RUN ONCE, SHOULD CHANGE TO 02 BC OF MASTER
+        network.begin(90,(uint16_t) incomingData);
+        currNode = (uint16_t)incomingData;
+      }
+      else{
+       digitalWrite(LED,incomingData); //CHANGE BASED ON DEMO
+       /* if(incomingData==1){
+        lightOn=1;
+       } else {
+        lightOn=0;
+       } */
+      }
+    }
+  } 
+>>>>>>> Stashed changes
   
   //############## TRANSMIT ######################
   if(currNode == 01)
@@ -83,7 +129,7 @@ void loop(){
   else
   {
     //uint8_t switchIn = digitalRead(SWITCH);
-    uint8_t switchIn=0;
+    uint8_t switchIn=1;
     if(state==2){
       switchIn=1;
     }
@@ -93,10 +139,15 @@ void loop(){
     sendData(lightOn,master);
   }
 
+<<<<<<< Updated upstream
 lightOn=(lightOn+1)%2;
 
   digitalWrite(LED,lightOn);
   delay(100);
+=======
+  //digitalWrite(LED,lightOn);
+  //delay(100);
+>>>>>>> Stashed changes
 }
 
 void sendData(int outGoingData, uint16_t dest) {
