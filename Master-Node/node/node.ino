@@ -16,7 +16,7 @@
 #include <avr/interrupt.h>
 
 #define intPin 2
-#define LED 4
+#define LED 3 //4
 #define SWITCH 9
 #define sirenOut 4
 ADXL345_JaMNN adxl;
@@ -24,9 +24,9 @@ ADXL345_JaMNN adxl;
 uint8_t state;
 uint16_t count;
 bool intFlag;
-
+#define  CSN  10 //8
 // instantiate an object for the nRF24L01 transceiver
-RF24 radio(7, 8); // using pin 7 for the CE pin, and pin 8 for the CSN 
+RF24 radio(7, CSN); // using pin 7 for the CE pin, and pin 8 for the CSN 
 RF24Network network(radio);
 const uint16_t master = 00;   // Address of this node in Octal format ( 04,031, etc)
 const uint16_t node01 = 01;      // Address of the other node in Octal format
