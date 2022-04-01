@@ -111,7 +111,7 @@ void loop(){
     if(state==2){
       switchIn=1;
     }
-    sendData(switchIn, master); 
+    sendData(0, master); 
   }
 
   digitalWrite(LED,lightOn);
@@ -123,11 +123,19 @@ void sendData(int outGoingData, uint16_t dest) {
   bool ok = network.write(header1, &outGoingData, sizeof(outGoingData)); //1 means SUCCESS, 0 means PACKET FAILED
 }
 
+void sendDataVital(int outGoingData, uint16_t dest) {
+  RF24NetworkHeader header1(dest); //destination
+  bool ok=false;
+  while(!ok){
+    ok = network.write(header1, &outGoingData, sizeof(outGoingData)); //1 means SUCCESS, 0 means PACKET FAILED 
+  }
+}
+
 void interruptFound(){ //PLACEHOLDER FUNCTION FOR WHAT SHOULD BE DONE WHEN THE COLLLISION IS DETECTED
   interrupts();
-  state=2; //Collision detected
   adxl.clearInterrupts();
-  //digitalWrite(LED,0);
+  network.update();
+  sendDataVital(1,master);
 }
 
 ISR(INT0_vect)
