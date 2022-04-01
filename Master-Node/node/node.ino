@@ -15,24 +15,18 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-#define CE PD7
-#define CSN PB2
-#define IRQ PC0
-
 #define intPin 2
-#define altInt PC2
-#define LED 3
-#define test_LED 7
-//#define SWITCH 9
+#define LED 3 //4
+#define SWITCH 9
+#define sirenOut 4
 ADXL345_JaMNN adxl;
 
 uint8_t state;
 uint16_t count;
 bool intFlag;
-bool lightOn;
-
+#define  CSN  10 //8
 // instantiate an object for the nRF24L01 transceiver
-RF24 radio(CE, CSN); // using pin 7 for the CE pin, and pin 8 for the CSN 
+RF24 radio(7, CSN); // using pin 7 for the CE pin, and pin 8 for the CSN 
 RF24Network network(radio);
 const uint16_t master = 00;   // Address of this node in Octal format ( 04,031, etc)
 const uint16_t node01 = 01;      // Address of the other node in Octal format
@@ -48,23 +42,18 @@ void setup() {
   network.begin(90, currNode);  //(channel, node address) CHANGE NODE ADDRESS FOR EACH DIFFERENT NODE
   radio.setDataRate(RF24_2MBPS);
   pinMode(LED, OUTPUT);//LED
-  //pinMode(SWITCH, INPUT); //SWITCH
-  pinMode(8, INPUT);
-  pinMode(9, INPUT);
-  
-
+  pinMode(SWITCH, INPUT); //SWITCH
 
   adxl.Init(RANGE_16g);
+  pinMode(intPin, INPUT);
+  adxl.Init_Active_Interrupts();
+  //attachInterrupt(digitalPinToInterrupt(intPin),interruptFound, RISING);
+  setupExtInterrupt();
 
   digitalWrite(LED,1);
   count=0;
   state=1; //Normally operating
   intFlag=0;
-  
-  pinMode(intPin, INPUT);
-  adxl.Init_Active_Interrupts();
-  //attachInterrupt(digitalPinToInterrupt(intPin),interruptFound, RISING);
-  //setupExtInterrupt();
   sei();
 }
 
@@ -89,12 +78,7 @@ void loop(){
         currNode = (uint16_t)incomingData;
       }
       else{
-       //digitalWrite(LED,incomingData); //CHANGE BASED ON DEMO
-       if(incomingData==1){
-        lightOn=1;
-       } else {
-        lightOn=0;
-       }
+       digitalWrite(LED,incomingData); //CHANGE BASED ON DEMO 
       }
     }
   } 
@@ -113,8 +97,6 @@ void loop(){
     }
     sendData(switchIn, master); 
   }
-
-  digitalWrite(LED,lightOn);
   delay(100);
 }
 
@@ -127,7 +109,7 @@ void interruptFound(){ //PLACEHOLDER FUNCTION FOR WHAT SHOULD BE DONE WHEN THE C
   interrupts();
   state=2; //Collision detected
   adxl.clearInterrupts();
-  //digitalWrite(LED,0);
+  digitalWrite(LED,0);
 }
 
 ISR(INT0_vect)
