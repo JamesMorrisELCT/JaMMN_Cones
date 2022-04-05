@@ -21,6 +21,12 @@
 #define sirenOut 4
 ADXL345_JaMNN adxl;
 
+volatile uint16_t& waveTopCount = OCR1A;
+volatile uint16_t& wavePos = 0CR1B;
+volatile uint8_t& ledOut = OCR2B;
+const uint16_t maxCycles = 1000;
+volatile uint16_t cyclesOn = 0;
+
 uint8_t state;
 uint16_t count;
 bool intFlag;
@@ -51,7 +57,9 @@ void setup() {
   //attachInterrupt(digitalPinToInterrupt(intPin),interruptFound, RISING);
   setupExtInterrupt();
 
-  digitalWrite(LED,1);
+  setupPWM();
+
+  //digitalWrite(LED,1);
   count=0;
   state=1; //Normally operating
   intFlag=0;
@@ -79,7 +87,7 @@ void loop(){
         currNode = (uint16_t)incomingData;
       }
       else{
-       digitalWrite(LED,incomingData); //CHANGE BASED ON DEMO 
+       //digitalWrite(LED,incomingData); //CHANGE BASED ON DEMO 
       }
     }
   } 
@@ -125,6 +133,36 @@ void interruptFound(){ //PLACEHOLDER FUNCTION FOR WHAT SHOULD BE DONE WHEN THE C
 ISR(INT0_vect)
 {
   interruptFound();
+}
+
+ISR(TIMER1_COMPB_vect) //This function runs everytime the TIMER1 CCRB register matches the current timer1 value
+{
+  cyclesOn=0;
+  TCCR2A |= _BV(COM2B1); //sets light on
+}
+
+ISR(TIMER2_OVF_vect) //This function runs everytime the TIMER2 overflows, it might take too long and cause errors, only one way to find out
+{
+  if((TCCR2A & COM2B1) != _BV(COM2B1)) //Checks to see if OC2B is off
+  {
+    return;  //If off, then leave immediatly
+  }
+  if(cyclesOn>=maxCycles){ //If over the desired cycles, then turn off light
+    TCCR2A&=~_BV(COM2B1); // Sets the light as off
+   return; 
+  }
+  cyclesOn++;
+}
+void setupPWM(){ //Sets up the Timer2 registers to support the 8 bit fast PWM mode for output B
+  TCCR2A = _BV(COM2B1) | _BV(WGM21) | _BV(WGM20); //Mode 3, fast PWM that counts to 0xFF, sets up OC2B as non-inverting output
+  TCCR2B = _BV(CS22) | _BV(CS20); // Prescaler = 128, a prescaler of 256 might work, but worried about speed of traffic driving by noticing the strobe, not a large power loss anyways
+
+  waveTopCount=0xFFFF; //Another name for OCR1A, which determines how long it takes to do a wave cycle
+  wavePos=0x7FFF; //Sets it to the middle, this needs to be changed to something more complex
+  TCCR1A = _BV(0); //mode 4, CTC for generic timing
+  TCCR1B = _BV(WGM12) | _BV(CS12); // prescaler = 256, estimated to be ~2s, if change prescaler to 1024 it would be ~10s estimated
+
+  ledOut=1;
 }
 
 void setupExtInterrupt(){
