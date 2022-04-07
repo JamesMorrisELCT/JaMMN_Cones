@@ -26,8 +26,8 @@ ADXL345_JaMNN adxl;
 bool ledOn = false;
 
 volatile uint16_t waveTop = 0x00BF;
-volatile uint16_t wavePos = 0x0006;
-volatile uint16_t pos = 0x000F;
+volatile uint16_t wavePos = 0x0000;
+volatile uint16_t pos = 0x0000;
 
 volatile uint16_t& waveSpeed = OCR1A;
 volatile uint8_t& ledOut = OCR2B;
@@ -80,52 +80,79 @@ void loop(){
   
   //############### RECEIVE ######################
  // RF24NetworkHeader headertemp;
-  //network.peek(&headertemp);
-  //Serial.println(headertemp.from_node);
   while(network.available()){
     Serial.println(currNode);
     Serial.println("RX");
     RF24NetworkHeader header;
-    int incomingData;
+    uint16_t incomingData;
     network.read(header, &incomingData, sizeof(incomingData));
+    uint16_t inCommand = (incomingData & 0xF000)>>12;
+    uint16_t inData = incomingData & 0x0FFF;
     if(header.from_node == 00){
       if(currNode == 01) { //SHOULD RUN ONCE, SHOULD CHANGE TO 02 BC OF MASTER
         network.begin(90,(uint16_t) incomingData);
         currNode = (uint16_t)incomingData;
+        continue;
       }
-      else{
-       //digitalWrite(LED,incomingData); //CHANGE BASED ON DEMO 
+      switch(inCommand) {
+        case 1 : // Set WavePos
+          wavePos=inData;
+          break;
+        case 2 : // Set WaveTop
+          waveTop=inData;
+          break;
+        case 3 : // Set Pos
+          pos=inData;
+          break;
+        
+      }
+      if(inCommand==1){ //Set WavePos
+        wavePos=inData;
+      } else if(inCommand==2){ //Set WaveTop
+        waveTop=inData;
+      } else if(inCommand==3){
+        
       }
     }
-  } 
+  }
   
   //############## TRANSMIT ######################
+  uint16_t outData=0x0000;
   if(currNode == 01)
   {
-    sendData(1,master);
+    outData=0xF001;
+    sendData(outData,master);
   }
   else
   {
-    //uint8_t switchIn = digitalRead(SWITCH);
-    uint8_t switchIn=0;
     if(state==2){
-      switchIn=1;
+      outData=0x0001;
+      sendDataVital(outData,master);
+    } else {
+      outData=0x0000;
+      sendData(outData, master);  
     }
-    sendData(0, master); 
   }
   delay(100);
 }
 
-void sendData(int outGoingData, uint16_t dest) {
+void sendData(uint16_t outGoingData, uint16_t dest) {
   RF24NetworkHeader header1(dest); //destination
   bool ok = network.write(header1, &outGoingData, sizeof(outGoingData)); //1 means SUCCESS, 0 means PACKET FAILED
 }
 
-void sendDataVital(int outGoingData, uint16_t dest) {
+void sendDataVital(uint16_t outGoingData, uint16_t dest) { //Only used for sending a distress signal right now
   RF24NetworkHeader header1(dest); //destination
   bool ok=false;
-  while(!ok){
+  uint8_t c=0;
+  while(!ok||c<=5){
     ok = network.write(header1, &outGoingData, sizeof(outGoingData)); //1 means SUCCESS, 0 means PACKET FAILED 
+    c++;
+  }
+  if(!ok){
+    state==2;
+  } else {
+    state==1;
   }
 }
 
@@ -133,7 +160,7 @@ void interruptFound(){ //PLACEHOLDER FUNCTION FOR WHAT SHOULD BE DONE WHEN THE C
   interrupts();
   adxl.clearInterrupts();
   network.update();
-  sendDataVital(1,master);
+  sendDataVital(0x0001,master);
   //digitalWrite(LED,0);
 }
 
@@ -144,10 +171,10 @@ ISR(INT0_vect)
 
 ISR(TIMER1_COMPA_vect) //This function runs everytime the TIMER1 CCRB register matches the current timer1 value
 {
-  if(wavePos>=waveTop){
-    wavePos=0;
+  if(pos>=waveTop){
+    pos=0;
   } else {
-    wavePos++;
+    pos++;
   }
   if(wavePos==pos){
     cyclesOn=0;
@@ -175,7 +202,7 @@ void setupPWM(){ //Sets up the Timer2 registers to support the 8 bit fast PWM mo
   TIMSK2 = (TIMSK2 & B11111110) | 0x01; //Enables timer overflow interrupt
   TCCR2A = _BV(COM2B1) | _BV(WGM21) | _BV(WGM20); //Mode 3, fast PWM that counts to 0xFF, sets up OC2B as non-inverting output
   TCCR2B = _BV(CS22) | _BV(CS21); // Prescaler = 128, a prescaler of 256 might work, but worried about speed of traffic driving by noticing the strobe, not a large power loss anyways
-  TCCR2A&=~_BV(COM2B1);
+  TCCR2A&=~_BV(COM2B1); //Turn off led output
   ledOn = false;
 
   waveSpeed=0xFFFF; //Another name for OCR1A, which determines how long it takes to do a wave cycle

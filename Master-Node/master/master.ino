@@ -30,6 +30,8 @@ bool node02Flag = 0;
 bool node03Flag = 0;
 bool node04Flag = 0;
 
+#define siren 9
+
 
 void setup() {
   Serial.begin(115200);
@@ -37,12 +39,14 @@ void setup() {
   radio.begin();
   network.begin(90, master);  //(channel, node address)
   radio.setDataRate(RF24_2MBPS);
-  //radio.setPALevel(RF24_PA_LOW);  // RF24_PA_MAX is default.
-  pinMode(2, OUTPUT);//LED 1
-  pinMode(3,INPUT); //SWITCH
-  pinMode(4, OUTPUT); //LED 2
-  pinMode(5, OUTPUT); //LED 3
-  pinMode(6, OUTPUT); //LED ALARM RED
+  radio.setPALevel(RF24_PA_LOW);  // RF24_PA_MAX is default.
+  //pinMode(2, OUTPUT);//LED 1
+  pinMode(siren,OUTPUT); //SWITCH
+  digitalWrite(siren,0);
+  pinMode(10, INPUT);
+  //pinMode(4, OUTPUT); //LED 2
+  //pinMode(5, OUTPUT); //LED 3
+  //pinMode(6, OUTPUT); //LED ALARM RED
 }
 
 void loop() {
@@ -52,17 +56,32 @@ void loop() {
   //network.peek(&headertemp);
   //Serial.println((int)headertemp.from_node);
   while ( network.available() ) {     // Is there any incoming data?
-    //Serial.println("RX");
+    Serial.println("RX");
     RF24NetworkHeader header;
-    int incomingData;
+    uint16_t incomingData;
     network.read(header, &incomingData, sizeof(incomingData)); // Read the incoming data
+    uint16_t inCommand = (incomingData & 0xF000)>>12;
+    uint16_t inData = incomingData & 0x0FFF;
+    Serial.println(inData);
     
     if(header.from_node == 01 ){ //TAKE ACTION ON RECIEVE PAYLOAD
       Serial.println("changing");
       sendData(nodeCount,baseNode);
+      if(nodeCount!=02){
+        sendData(0x105F,nodeCount);
+      }
       nodeCount++; //increment for the next available node
       totalNodes++;
+    } else {
+      switch(inData) {
+        case 0x0001 :
+          digitalWrite(siren,1);
+          break;
+        default :
+          break;
+      }
     }
+    /*
     if(header.from_node == 02){
       digitalWrite(2,incomingData);
       node02Flag = 1;
@@ -78,6 +97,8 @@ void loop() {
       digitalWrite(5,incomingData);
       node04Time = millis();
     }
+
+    */
   } 
 
   
@@ -111,13 +132,14 @@ if(ENABLE)
     digitalWrite(3,LOW);
   }
 }
-  
+  /*
   if(currTime -prevTime >= 500){
     sendData(1,(i%totalNodes)+2);
     sendData(0,((i-1)%totalNodes)+2);
     prevTime = currTime;
     i++;
   }
+  */
 
   //############## TRANSMIT ################
   /*
@@ -125,9 +147,12 @@ if(ENABLE)
   sendData(switchIn, node02);
   sendData(switchIn, node03);
   delay(50); */
+  if(digitalRead(10)==0){
+    digitalWrite(siren,0);
+  }
 }
 
-void sendData(int outGoingData, uint16_t dest) {
+void sendData(uint16_t outGoingData, uint16_t dest) {
   RF24NetworkHeader header1(dest); //destination
   bool ok = network.write(header1, &outGoingData, sizeof(outGoingData)); //1 means SUCCESS, 0 means PACKET FAILED
 }
