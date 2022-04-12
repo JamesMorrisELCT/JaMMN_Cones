@@ -31,7 +31,7 @@ volatile uint16_t pos = 0x0000;
 
 volatile uint16_t& waveSpeed = OCR1A;
 volatile uint8_t& ledOut = OCR2B;
-const uint16_t maxCycles = 250;
+const uint16_t maxCycles = 150;
 volatile uint16_t cyclesOn = 0;
 
 uint8_t state;
@@ -92,6 +92,7 @@ void loop(){
       if(currNode == 01) { //SHOULD RUN ONCE, SHOULD CHANGE TO 02 BC OF MASTER
         network.begin(90,(uint16_t) incomingData);
         currNode = (uint16_t)incomingData;
+        ledOut=50;
         continue;
       }
       switch(inCommand) {
@@ -103,6 +104,9 @@ void loop(){
           break;
         case 3 : // Set Pos
           pos=inData;
+          if(inData==0x00A3){
+            ledOut=255;
+          }
           break;
         
       }
@@ -210,7 +214,7 @@ void setupPWM(){ //Sets up the Timer2 registers to support the 8 bit fast PWM mo
   TCCR1B = _BV(WGM12) | _BV(CS12) | _BV(CS10); // prescaler = 256, estimated to be ~2s, if change prescaler to 1024 it would be ~10s estimated
   TIMSK1 = (TIMSK1 & B11111101) | 0x02; //Enables compare register A interrupt
 
-  ledOut=50;
+  ledOut=2;
 }
 
 void setupExtInterrupt(){

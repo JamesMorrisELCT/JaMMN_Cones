@@ -11,6 +11,16 @@
 #include "RF24.h"
 #include <RF24Network.h>
 
+volatile uint16_t waveTop = 0x00BF;
+volatile uint16_t wavePos = 0x0000;
+volatile uint16_t pos = 0x0000;
+
+volatile uint16_t& waveSpeed = OCR1A;
+volatile uint8_t& ledOut = OCR2B;
+const uint16_t maxCycles = 150;
+volatile uint16_t cyclesOn = 0;
+bool ledOn = false;
+
 // instantiate an object for the nRF24L01 transceiver
 RF24 radio(7, 8); // using pin 7 for the CE pin, and pin 8 for the CSN 
 RF24Network network(radio);
@@ -30,20 +40,27 @@ bool node02Flag = 0;
 bool node03Flag = 0;
 bool node04Flag = 0;
 
-#define siren 9
+#define SWITCH 2 //10
+
+#define siren 3 //9
 
 
 void setup() {
+  alterClock();
   Serial.begin(115200);
   SPI.begin();
   radio.begin();
   network.begin(90, master);  //(channel, node address)
   radio.setDataRate(RF24_2MBPS);
   radio.setPALevel(RF24_PA_LOW);  // RF24_PA_MAX is default.
+
+  setupPWM();
+  
   //pinMode(2, OUTPUT);//LED 1
   pinMode(siren,OUTPUT); //SWITCH
-  digitalWrite(siren,0);
-  pinMode(10, INPUT);
+  digitalWrite(siren,1);
+  pinMode(SWITCH, INPUT);
+  
   //pinMode(4, OUTPUT); //LED 2
   //pinMode(5, OUTPUT); //LED 3
   //pinMode(6, OUTPUT); //LED ALARM RED
@@ -67,8 +84,10 @@ void loop() {
     if(header.from_node == 01 ){ //TAKE ACTION ON RECIEVE PAYLOAD
       Serial.println("changing");
       sendData(nodeCount,baseNode);
+      delay(3000);
+      sendData(0x3000 | (pos & 0x0FFF),nodeCount);
       if(nodeCount!=02){
-        sendData(0x105F,nodeCount);
+        //sendData(0x105F,nodeCount);
       }
       nodeCount++; //increment for the next available node
       totalNodes++;
@@ -147,12 +166,70 @@ if(ENABLE)
   sendData(switchIn, node02);
   sendData(switchIn, node03);
   delay(50); */
-  if(digitalRead(10)==0){
+
+  
+  if(digitalRead(SWITCH)==0){
     digitalWrite(siren,0);
+    synchAll();
   }
+}
+
+void synchAll(){
+  for(i=02; i<=02+totalNodes-1; i++){
+    sendData(0x3000 | (pos & 0x0FFF),i);
+  }
+}
+
+void alterClock(){
+  CLKPR=B10000000;
+  CLKPR=B00000001;
 }
 
 void sendData(uint16_t outGoingData, uint16_t dest) {
   RF24NetworkHeader header1(dest); //destination
   bool ok = network.write(header1, &outGoingData, sizeof(outGoingData)); //1 means SUCCESS, 0 means PACKET FAILED
+}
+
+ISR(TIMER1_COMPA_vect) //This function runs everytime the TIMER1 CCRB register matches the current timer1 value
+{
+  if(pos>=waveTop){
+    pos=0;
+  } else {
+    pos++;
+  }
+  if(wavePos==pos){
+    cyclesOn=0;
+    //TCCR2A |= _BV(COM2B1); //sets light on
+    ledOn = true;
+  }
+}
+
+ISR(TIMER2_OVF_vect) //This function runs everytime the TIMER2 overflows, it might take too long and cause errors, only one way to find out
+{
+  if(!ledOn) //Checks to see if OC2B is off
+  {
+    return;  //If off, then leave immediatly
+  }
+  if(cyclesOn>=maxCycles){ //If over the desired cycles, then turn off light
+    //TCCR2A&=~_BV(COM2B1); // Sets the light as off
+    ledOn=false;
+    //digitalWrite(LED,0);
+   return; 
+  }
+  cyclesOn++;
+}
+
+void setupPWM(){ //Sets up the Timer2 registers to support the 8 bit fast PWM mode for output B
+  TIMSK2 = (TIMSK2 & B11111110) | 0x01; //Enables timer overflow interrupt
+  TCCR2A = _BV(COM2B1) | _BV(WGM21) | _BV(WGM20); //Mode 3, fast PWM that counts to 0xFF, sets up OC2B as non-inverting output
+  TCCR2B = _BV(CS22) | _BV(CS21); // Prescaler = 128, a prescaler of 256 might work, but worried about speed of traffic driving by noticing the strobe, not a large power loss anyways
+  TCCR2A&=~_BV(COM2B1); //Turn off led output
+  ledOn = false;
+
+  waveSpeed=0xFFFF; //Another name for OCR1A, which determines how long it takes to do a wave cycle
+  TCCR1A = _BV(0); //mode 4, CTC for generic timing
+  TCCR1B = _BV(WGM12) | _BV(CS12) | _BV(CS10); // prescaler = 256, estimated to be ~2s, if change prescaler to 1024 it would be ~10s estimated
+  TIMSK1 = (TIMSK1 & B11111101) | 0x02; //Enables compare register A interrupt
+
+  ledOut=2;
 }
