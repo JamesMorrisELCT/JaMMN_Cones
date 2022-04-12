@@ -24,6 +24,7 @@
 #define sirenOut 4
 ADXL345_JaMNN adxl;
 bool ledOn = false;
+bool manualControl=false;
 
 volatile uint16_t waveTop = 0x00BF;
 volatile uint16_t wavePos = 0x0000;
@@ -96,6 +97,16 @@ void loop(){
         continue;
       }
       switch(inCommand) {
+        case 0 : //Turn on or off the light
+          manualControl=true;
+          TIMSK2 &= ~_BV(0x01); //Enables timer overflow interrupt
+          TIMSK1 &= ~_BV(0x02); //Enables compare register A interrupt
+          if(inData==(uint16_t)0x0000){
+            turnOffLED();
+          } else {
+            turnOnLED();
+          }
+          break;
         case 1 : // Set WavePos
           wavePos=inData;
           break;
@@ -182,8 +193,7 @@ ISR(TIMER1_COMPA_vect) //This function runs everytime the TIMER1 CCRB register m
   }
   if(wavePos==pos){
     cyclesOn=0;
-    TCCR2A |= _BV(COM2B1); //sets light on
-    ledOn = true;
+    turnOnLED();
   }
 }
 
@@ -194,8 +204,7 @@ ISR(TIMER2_OVF_vect) //This function runs everytime the TIMER2 overflows, it mig
     return;  //If off, then leave immediatly
   }
   if(cyclesOn>=maxCycles){ //If over the desired cycles, then turn off light
-    TCCR2A&=~_BV(COM2B1); // Sets the light as off
-    ledOn=false;
+    turnOffLED();
     //digitalWrite(LED,0);
    return; 
   }
@@ -206,8 +215,7 @@ void setupPWM(){ //Sets up the Timer2 registers to support the 8 bit fast PWM mo
   TIMSK2 = (TIMSK2 & B11111110) | 0x01; //Enables timer overflow interrupt
   TCCR2A = _BV(COM2B1) | _BV(WGM21) | _BV(WGM20); //Mode 3, fast PWM that counts to 0xFF, sets up OC2B as non-inverting output
   TCCR2B = _BV(CS22) | _BV(CS21); // Prescaler = 128, a prescaler of 256 might work, but worried about speed of traffic driving by noticing the strobe, not a large power loss anyways
-  TCCR2A&=~_BV(COM2B1); //Turn off led output
-  ledOn = false;
+  turnOffLED();
 
   waveSpeed=0xFFFF; //Another name for OCR1A, which determines how long it takes to do a wave cycle
   TCCR1A = _BV(0); //mode 4, CTC for generic timing
@@ -215,6 +223,16 @@ void setupPWM(){ //Sets up the Timer2 registers to support the 8 bit fast PWM mo
   TIMSK1 = (TIMSK1 & B11111101) | 0x02; //Enables compare register A interrupt
 
   ledOut=2;
+}
+
+void turnOnLED(){
+  TCCR2A |= _BV(COM2B1); //sets light on
+  ledOn = true;
+}
+
+void turnOffLED(){
+  TCCR2A&=~_BV(COM2B1); //Turn off led output
+  ledOn = false;
 }
 
 void setupExtInterrupt(){
