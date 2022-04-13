@@ -40,6 +40,8 @@ bool node02Flag = 0;
 bool node03Flag = 0;
 bool node04Flag = 0;
 
+uint8_t loopCount = 0;
+
 #define SWITCH 2 //10
 
 #define siren 3 //9
@@ -47,7 +49,7 @@ bool node04Flag = 0;
 
 void setup() {
   alterClock();
-  Serial.begin(115200);
+  Serial.begin(9600);
   SPI.begin();
   radio.begin();
   network.begin(90, master);  //(channel, node address)
@@ -83,7 +85,10 @@ void loop() {
     
     if(header.from_node == 01 ){ //TAKE ACTION ON RECIEVE PAYLOAD
       Serial.println("changing");
-      sendData(nodeCount,baseNode);
+      bool ok = sendDataTested(nodeCount,baseNode);
+      if(!ok){
+        continue;
+      }
       delay(3000);
       sendData(0x3000 | (pos & 0x0FFF),nodeCount);
       if(nodeCount!=02){
@@ -91,6 +96,7 @@ void loop() {
       }
       nodeCount++; //increment for the next available node
       totalNodes++;
+      Serial.println("Changed!");
     } else {
       switch(inData) {
         case 0x0001 :
@@ -167,16 +173,75 @@ if(ENABLE)
   sendData(switchIn, node03);
   delay(50); */
 
-  
+
+  switch(loopCount){
+    case 1 : // These are just arbitrary values to make sure that the "long" time consuming operations are spread out
+      synchAllTime();
+      break;
+    case 100 :
+      synchAllPos();
+      break;
+    case 200 :
+      synchAllWaveTop();
+      break;
+    case 300 :
+      //synchAllWaveSpeed();
+      break;
+    case 400 :
+      synchAllMaxCycles();
+      break;
+    case 500 :
+      synchAllLedOut();
+      break;
+    case 5 :
+      loopCount=0;
+      break;
+    default :
+      break;
+  }
+
   if(digitalRead(SWITCH)==0){
     digitalWrite(siren,0);
-    synchAll();
+  }
+  Serial.println(loopCount);
+  loopCount++;
+}
+void synchAllPos(){
+  uint16_t nDist=waveTop/(totalNodes+1);
+  uint16_t currDist=0;
+  for(i=02; i<=02+totalNodes-1; i++){
+    sendData(0x1000 | (currDist & 0x0FFF),i);
+    currDist=currDist+nDist;
   }
 }
 
-void synchAll(){
+void synchAllTime(){
   for(i=02; i<=02+totalNodes-1; i++){
     sendData(0x3000 | (pos & 0x0FFF),i);
+  }
+}
+
+void synchAllWaveTop(){
+  for(i=02; i<=02+totalNodes-1; i++){
+    sendData(0x2000 | (waveTop & 0x0FFF),i);
+  }
+}
+
+void synchAllWaveSpeed(){
+  for(i=02; i<=02+totalNodes-1; i++){
+    sendData(0x4000 | (waveSpeed & 0x0FFF),i);
+  }
+}
+
+void synchAllMaxCycles(){
+  for(i=02; i<=02+totalNodes-1; i++){
+    sendData(0x5000 | (maxCycles & 0x0FFF),i);
+  }
+}
+
+void synchAllLedOut(){
+  for(i=02; i<=02+totalNodes-1; i++){
+    sendData(0x6000 | (ledOut & 0x0FFF),i);
   }
 }
 
@@ -188,6 +253,12 @@ void alterClock(){
 void sendData(uint16_t outGoingData, uint16_t dest) {
   RF24NetworkHeader header1(dest); //destination
   bool ok = network.write(header1, &outGoingData, sizeof(outGoingData)); //1 means SUCCESS, 0 means PACKET FAILED
+}
+
+bool sendDataTested(uint16_t outGoingData, uint16_t dest) {
+  RF24NetworkHeader header1(dest); //destination
+  bool ok = network.write(header1, &outGoingData, sizeof(outGoingData)); //1 means SUCCESS, 0 means PACKET FAILED
+  return ok;
 }
 
 ISR(TIMER1_COMPA_vect) //This function runs everytime the TIMER1 CCRB register matches the current timer1 value
@@ -231,5 +302,5 @@ void setupPWM(){ //Sets up the Timer2 registers to support the 8 bit fast PWM mo
   TCCR1B = _BV(WGM12) | _BV(CS12) | _BV(CS10); // prescaler = 256, estimated to be ~2s, if change prescaler to 1024 it would be ~10s estimated
   TIMSK1 = (TIMSK1 & B11111101) | 0x02; //Enables compare register A interrupt
 
-  ledOut=2;
+  ledOut=254;
 }

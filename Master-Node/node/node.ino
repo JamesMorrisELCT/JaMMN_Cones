@@ -22,6 +22,7 @@
 #define LED 3 //4
 #define SWITCH 9
 #define sirenOut 4
+#define LVsensor A3
 ADXL345_JaMNN adxl;
 bool ledOn = false;
 bool manualControl=false;
@@ -32,8 +33,10 @@ volatile uint16_t pos = 0x0000;
 
 volatile uint16_t& waveSpeed = OCR1A;
 volatile uint8_t& ledOut = OCR2B;
-const uint16_t maxCycles = 150;
+volatile uint16_t maxCycles = 150;
 volatile uint16_t cyclesOn = 0;
+uint16_t bat_volt;
+bool lowBattery = false;
 
 uint8_t state;
 uint16_t count;
@@ -58,7 +61,8 @@ void setup() {
   radio.setDataRate(RF24_2MBPS);
   pinMode(LED, OUTPUT);//LED
   pinMode(SWITCH, INPUT); //SWITCH
-
+  pinMode(LVsensor,INPUT);
+  
   adxl.Init(RANGE_16g);
   pinMode(intPin, INPUT);
   adxl.Init_Active_Interrupts();
@@ -97,7 +101,7 @@ void loop(){
         continue;
       }
       switch(inCommand) {
-        case 0 : //Turn on or off the light
+        case 0 : //Manually turn on or off the light
           manualControl=true;
           TIMSK2 &= ~_BV(0x01); //Enables timer overflow interrupt
           TIMSK1 &= ~_BV(0x02); //Enables compare register A interrupt
@@ -115,21 +119,25 @@ void loop(){
           break;
         case 3 : // Set Pos
           pos=inData;
-          if(inData==0x00A3){
-            ledOut=255;
-          }
           break;
-        
+        case 4 : // Set Wave Speed
+          waveSpeed=inData;
+          break;
+        case 5 : //Set Max Cycles
+          maxCycles=inData;
+          break;
+        case 6 : //Set LED out
+          if(lowBattery)
+          {
+            break;
+          }
+          ledOut=(uint8_t)(inData & 0x00FF);
+          break;
       }
-      if(inCommand==1){ //Set WavePos
-        wavePos=inData;
-      } else if(inCommand==2){ //Set WaveTop
-        waveTop=inData;
-      } else if(inCommand==3){
         
       }
     }
-  }
+    
   
   //############## TRANSMIT ######################
   uint16_t outData=0x0000;
@@ -145,9 +153,16 @@ void loop(){
       sendDataVital(outData,master);
     } else {
       outData=0x0000;
-      sendData(outData, master);  
+      sendData(outData, master);
     }
   }
+  bat_volt = analogRead(LVsensor);
+  if(bat_volt <= 0.61) //2.0 Volts
+  {
+    ledOn = 5;
+    lowBattery = true;   
+  } 
+  
   delay(100);
 }
 
@@ -222,7 +237,7 @@ void setupPWM(){ //Sets up the Timer2 registers to support the 8 bit fast PWM mo
   TCCR1B = _BV(WGM12) | _BV(CS12) | _BV(CS10); // prescaler = 256, estimated to be ~2s, if change prescaler to 1024 it would be ~10s estimated
   TIMSK1 = (TIMSK1 & B11111101) | 0x02; //Enables compare register A interrupt
 
-  ledOut=2;
+  ledOut=1;
 }
 
 void turnOnLED(){
