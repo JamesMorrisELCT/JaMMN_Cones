@@ -212,7 +212,7 @@ ISR(TIMER1_COMPA_vect) //This function runs everytime the TIMER1 CCRB register m
   }
 }
 
-ISR(TIMER2_OVF_vect) //This function runs everytime the TIMER2 overflows, it might take too long and cause errors, only one way to find out
+ISR(TIMER2_OVF_vect) //This function runs everytime the TIMER2 overflows
 {
   if(!ledOn) //Checks to see if OC2B is off
   {
@@ -229,13 +229,13 @@ ISR(TIMER2_OVF_vect) //This function runs everytime the TIMER2 overflows, it mig
 void setupPWM(){ //Sets up the Timer2 registers to support the 8 bit fast PWM mode for output B
   TIMSK2 = (TIMSK2 & B11111110) | 0x01; //Enables timer overflow interrupt
   TCCR2A = _BV(COM2B1) | _BV(WGM21) | _BV(WGM20); //Mode 3, fast PWM that counts to 0xFF, sets up OC2B as non-inverting output
-  TCCR2B = _BV(CS22) | _BV(CS21); // Prescaler = 128, a prescaler of 256 might work, but worried about speed of traffic driving by noticing the strobe, not a large power loss anyways
+  TCCR2B = _BV(CS22) | _BV(CS21); // Prescaler = 256
   turnOffLED();
 
   waveSpeed=0xFFFF; //Another name for OCR1A, which determines how long it takes to do a wave cycle
   TCCR1A = _BV(0); //mode 4, CTC for generic timing
-  TCCR1B = _BV(WGM12) | _BV(CS12) | _BV(CS10); // prescaler = 256, estimated to be ~2s, if change prescaler to 1024 it would be ~10s estimated
-  TIMSK1 = (TIMSK1 & B11111101) | 0x02; //Enables compare register A interrupt
+  TCCR1B = _BV(WGM12) | _BV(CS12) | _BV(CS10); // Currently prescaler = 1024. prescaler = 256 estimated to be ~2s, prescaler = 1024 would be ~10s estimated
+  TIMSK1 = (TIMSK1 & B11111101) | 0x02; //Enables compare register A interrupt 
 
   ledOut=1;
 }

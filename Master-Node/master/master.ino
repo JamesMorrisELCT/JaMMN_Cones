@@ -193,7 +193,7 @@ if(ENABLE)
     case 500 :
       synchAllLedOut();
       break;
-    case 5 :
+    case 600 :
       loopCount=0;
       break;
     default :
@@ -271,7 +271,7 @@ ISR(TIMER1_COMPA_vect) //This function runs everytime the TIMER1 CCRB register m
   if(wavePos==pos){
     cyclesOn=0;
     //TCCR2A |= _BV(COM2B1); //sets light on
-    ledOn = true;
+    //ledOn = true;
   }
 }
 

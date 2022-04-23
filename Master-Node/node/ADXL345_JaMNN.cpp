@@ -5,7 +5,7 @@ ADXL345_JaMNN::ADXL345_JaMNN(){
 }
 
 /* Read one of the 3 axis via the I2C interface */
-int ADXL345_JaMNN::Read_Axis(byte axis) //NOTE: this function should be updated, as the axis's of interest should be read all at the same time for time efficiency reasons. Not TOO important, but ya know
+int ADXL345_JaMNN::Read_Axis(byte axis) //NOTE: this function should be updated, as the axis's of interest should be read all at the same time for time efficiency reasons. Not TOO important
 {
   int Data;
    
@@ -83,11 +83,10 @@ void ADXL345_JaMNN::Init_Active_Interrupts(){
 }
 
 void ADXL345_JaMNN::clearInterrupts(){
-  //TODO:: Write the code for reading INT_SOURCE
   uint8_t Data;
-  //Requests the data stored inside of register 0x30
+  //Requests the data stored inside of register 0x30, which is INT_SOURCE
   Wire.beginTransmission(I2C_Add);
-  Wire.write(0x30);
+  Wire.write(INT_SOURCE);
   Wire.endTransmission();
   Wire.beginTransmission(I2C_Add);
   Wire.requestFrom(I2C_Add,1);

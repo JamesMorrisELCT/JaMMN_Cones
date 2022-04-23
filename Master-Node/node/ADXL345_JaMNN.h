@@ -33,8 +33,8 @@
 #define FIFO_STATUS 0x39
 
 
-#define I2C_Add 0x53
-//#define I2C_Add 0x1D
+#define I2C_Add 0x53 //Default address if the address pin stays low
+//#define I2C_Add 0x1D //Alternate address if the address pin is brought high
 
 #define RANGE_2g 0
 #define RANGE_4g 1
